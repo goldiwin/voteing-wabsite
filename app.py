@@ -20,9 +20,9 @@ def get_cv2_image_from_base64(b64_str):
 
 
 app = Flask(__name__)
-app.secret_key = 'super_secure_voting_secret'
+app.secret_key = os.environ.get('SECRET_KEY', 'super_secure_voting_secret')
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False # Set to True if using HTTPS
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('RENDER', False)  # True on Render (HTTPS)
 
 # Setup Logging
 logging.basicConfig(level=logging.INFO)
@@ -199,7 +199,8 @@ def open_browser():
         pass
 
 if __name__ == '__main__':
-    # Only open the browser once, not again when the reloder restarts
-    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+    port = int(os.environ.get('PORT', 5000))
+    # Only open the browser locally, not on Render
+    if not os.environ.get('RENDER') and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
         Timer(1.5, open_browser).start()
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=not os.environ.get('RENDER'), host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)

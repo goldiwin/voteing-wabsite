@@ -2,7 +2,7 @@ flask
 flask-socketio
 deepface
 opencv-python-headless
-numpy
+numpy<2
 gunicorn
 eventlet
 tf-keras
