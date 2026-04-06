@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Voting System - National Database Retrieval</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <div id="splash-screen">
+        <div class="vault-door left-door"></div>
+        <div class="vault-door right-door"></div>
+
+        <div class="splash-content">
+            <div class="eci-header">
+                <img src="/static/images/india_flag.png" class="flag-icon" alt="India Flag"> 
+                <div class="eci-text">ELECTION COMMISSION OF INDIA <br><small>BHARAT NIRVACHAN AAYOG</small></div>
+                <img src="/static/images/india_flag.png" class="flag-icon" alt="India Flag">
+            </div>
+            
+            <div class="orbit-container">
+                <!-- Intense Radar/Targeting Ring -->
+                <div class="radar-ring"></div>
+                
+                <div class="orbit-ring">
+                    <i class='bx bx-target-lock person' style="--i:1;"></i>
+                    <i class='bx bx-cctv person warning-icon' style="--i:2;"></i>
+                    <i class='bx bx-shield-quarter person' style="--i:3;"></i>
+                    <i class='bx bx-cctv person warning-icon' style="--i:4;"></i>
+                    <i class='bx bx-target-lock person' style="--i:5;"></i>
+                    <i class='bx bx-cctv person warning-icon' style="--i:6;"></i>
+                    <i class='bx bx-shield-quarter person' style="--i:7;"></i>
+                    <i class='bx bx-cctv person warning-icon' style="--i:8;"></i>
+                </div>
+                
+                <div class="splash-text-group">
+                    <div class="vote-first"><span style="color:var(--primary);">AI</span> BIOMETRIC MATRIX</div>
+                    <h1 class="splash-text">SECURE VOTING SYSTEM</h1>
+                    
+                    <!-- Deterrence Section -->
+                    <div class="deterrence-message">
+                        <i class='bx bx-error-alt bx-tada'></i> 
+                        <strong>STRICT WARNING:</strong> TAMPERING, FRAUD, OR VOTER THEFT IS A SEVERE FEDERAL OFFENSE. ALL SURVEILLANCE & BIOMETRICS ARE LOGGED. VIOLATORS WILL FACE STRICT PROSECUTION.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ec-watermark">GOVERNMENT OF INDIA SECURE NETWORK</div>
+        </div>
+
+        <div class="vault-lock">
+            <i class='bx bx-fingerprint' id="lock-print"></i>
+        </div>
+        
+        <div class="voting-hand">
+            <i class='bx bxs-hand-up'></i>
+        </div>
+    </div>
+
+    <div class="background-anim"></div>
+
+    <main class="app-container">
+        
+        <!-- STEP 1 (NEW DEFAULT): Biometrics -->
+        <section id="step-biometrics" class="step active">
+            <div class="header">
+                <div class="main-flag-container">
+                    <img src="/static/images/india_flag.png" class="main-flag" alt="Government of India">
+                </div>
+                <h2><i class='bx bx-scan'></i> Automated Identity Lookup</h2>
+                <p>Provide your biometric data to securely retrieve your Government ID details.</p>
+                <button type="button" class="btn outline" id="btn-open-hw" style="width: auto; display: inline-block; padding: 8px 15px; margin-top: 10px; font-size: 0.8rem;">
+                    <i class='bx bx-usb'></i> Connect External Hardware Sensor
+                </button>
+            </div>
+
+            <div class="biometric-grid">
+                <!-- Face Scan -->
+                <div class="bio-card card-3d">
+                    <div class="camera-header">
+                        <h3>Face Match</h3>
+                        <select id="camera-select" class="camera-dropdown"></select>
+                    </div>
+                    <div class="video-container">
+                        <div id="qr-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.95); z-index:20; flex-direction:column; align-items:center; justify-content:center;">
+                            <h4 style="margin-bottom:15px;"><i class="bx bx-wifi"></i> Pair Mobile Sensor</h4>
+                            <img id="qr-code-img" src="" width="180" height="180" style="border:5px solid white; border-radius:10px;" />
+                            <p style="font-size:0.8rem; margin-top:15px; color:var(--text-muted); padding:0 20px; text-align:center;">Aim your phone's standard camera at this code.<br>A live connection will be bridged via WiFi instantly.</p>
+                        </div>
+
+                        <video id="video-stream" autoplay playsinline></video>
+                        <img id="remote-stream-target" style="display:none; width:100%; height:100%; object-fit:cover;" />
+                        <div class="laser-scanner" id="laser-overlay"></div>
+                        <canvas id="canvas-snap" style="display:none;"></canvas>
+                        <img id="face-preview" style="display:none;" />
+                    </div>
+                    <button type="button" class="btn outline" id="btn-snap"><i class='bx bx-camera'></i> Scan Face</button>
+                </div>
+
+                <!-- Fingerprint Simulation -->
+                <div class="bio-card card-3d" id="fp-card">
+                    <h3>Fingerprint Match</h3>
+                    <div class="fingerprint-container" id="fp-area">
+                        <i class='bx bx-fingerprint'></i>
+                        <div class="scan-line"></div>
+                    </div>
+                    <p id="fp-status">Tap area to scan fingerprint</p>
+                </div>
+            </div>
+
+            <button type="button" class="btn primary" id="btn-submit-bios" disabled>Fetch Identity from Database</button>
+            <div class="error-msg" id="bio-error"></div>
+        </section>
+
+        <!-- STEP 2: Review (Retrieved Identity) -->
+        <section id="step-review" class="step">
+            <div class="header">
+                <div class="main-flag-container">
+                    <img src="/static/images/india_flag.png" class="main-flag" alt="Government of India">
+                </div>
+                <h2><i class='bx bx-id-card'></i> Identity Retrieved</h2>
+                <p>MATCH CONFIRMED. Please verify your retrieved documents before voting.</p>
+            </div>
+
+            <div class="review-panel">
+                <div class="review-text">
+                    <p><strong>Name:</strong> <span id="rev-name"></span></p>
+                    <p><strong>Father's Name:</strong> <span id="rev-father"></span></p>
+                    <p><strong>Sex:</strong> <span id="rev-sex"></span></p>
+                    <p><strong>Age:</strong> <span id="rev-age"></span></p>
+                    <p><strong>Aadhaar Card:</strong> <span id="rev-aadhaar"></span></p>
+                    <p><strong>National ID Card:</strong> <span id="rev-id"></span></p>
+                    <p><strong>Voter ID Card:</strong> <span id="rev-voter-id"></span></p>
+                    <p><strong>Address:</strong> <span id="rev-address"></span></p>
+                </div>
+                <div class="review-bios">
+                    <img id="rev-face" src="" alt="Face Scan" />
+                    <div class="verified-badge"><i class='bx bx-check-circle'></i> Biometrics Matched</div>
+                </div>
+            </div>
+
+            <button type="button" class="btn primary" id="btn-confirm-review">Confirm Identity & Proceed</button>
+        </section>
+
+        <!-- STEP 3: Vote -->
+        <section id="step-vote" class="step">
+            <div class="header">
+                <div class="main-flag-container">
+                    <img src="/static/images/india_flag.png" class="main-flag" alt="Government of India">
+                </div>
+                <h2><i class='bx bx-box'></i> Voting Booth</h2>
+                <p>Select your candidate to cast a secure, anonymous ballot.</p>
+            </div>
+
+            <div class="candidates-list" id="candidates-container">
+                <!-- Injected via JS -->
+            </div>
+
+            <button type="button" class="btn primary" id="btn-cast-vote" disabled>Cast Secure Vote</button>
+            <div class="error-msg" id="vote-error"></div>
+        </section>
+
+        <!-- STEP 4: Success -->
+        <section id="step-success" class="step">
+            <div class="header success-header">
+                <div class="main-flag-container">
+                    <img src="/static/images/india_flag.png" class="main-flag" alt="Government of India">
+                </div>
+                <i class='bx bx-check-shield massive-icon'></i>
+                <h2>Vote Cast Successfully</h2>
+                <p id="success-msg">Your biometric authentication was verified securely and your vote has been recorded.</p>
+                <p id="auto-reset-note" style="margin-top:10px; color:var(--text-muted); font-size:0.9rem; opacity:0.8;"></p>
+            </div>
+            <button type="button" class="btn primary" onclick="resetForNextVoter()">Finish & Exit</button>
+            <button type="button" class="btn outline" id="btn-reset-demo" style="margin-top:15px; border-color:var(--error); color:var(--error);"><i class='bx bx-reset'></i> Reset System for Next Voter</button>
+        </section>
+
+    </main>
+
+    <!-- HARDWARE MANAGER MODAL -->
+    <div id="hw-modal" class="modal-overlay">
+        <div class="modal-content card-3d">
+            <div class="modal-header">
+                <h3><i class='bx bx-server'></i> Device Integration Hub</h3>
+                <i class='bx bx-x' id="close-hw"></i>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 20px;">Pair an external physical sensor, smart-phone, or USB apparatus to the high-security subsystem.</p>
+            
+            <div class="hw-options">
+                <button class="btn outline hw-btn" id="btn-hw-usb">
+                    <i class='bx bxl-usb'></i>
+                    <div class="hw-text">
+                        <strong>Link USB Scanner</strong>
+                        <span>Scan local USB ports for unlinked biometric hardware.</span>
+                    </div>
+                </button>
+
+                <button class="btn outline hw-btn" id="btn-hw-fido">
+                    <i class='bx bx-fingerprint'></i>
+                    <div class="hw-text">
+                        <strong>Link Phone/Security Key (FIDO2)</strong>
+                        <span>Cross-link your mobile fingerprint module over standard protocols.</span>
+                    </div>
+                </button>
+
+                <button class="btn outline hw-btn" id="btn-hw-sim">
+                    <i class='bx bx-bluetooth'></i>
+                    <div class="hw-text">
+                        <strong>Link Bluetooth Sensor</strong>
+                        <span>Pair wireless biometric terminals safely.</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inject Server Params -->
+    <script>
+        const SERVER_IP = "{{ local_ip }}";
+        const SESSION_ID = Math.random().toString(36).substring(2, 10);
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>

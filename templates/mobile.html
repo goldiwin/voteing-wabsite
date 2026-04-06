@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Biometric Scanner</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        video { width: 100%; height: auto; object-fit: cover; }
+        .controls { position: absolute; bottom: 30px; width: 100%; text-align: center; }
+        button { background: #10b981; border: none; color: white; padding: 15px 30px; font-size: 1.2rem; border-radius: 30px; border: 2px solid #fff; box-shadow: 0 0 15px #10b981; }
+        button:active { background: #059669; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <video id="vid" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div class="controls">
+        <button id="btn-snap">Capture Face Profile</button>
+    </div>
+
+    <script>
+        const socket = io();
+        const sessionId = new URLSearchParams(window.location.search).get('session_id');
+        socket.emit('join', { session_id: sessionId });
+
+        const video = document.getElementById('vid');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        let streamActive = true;
+
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+            .then(stream => {
+                video.srcObject = stream;
+                
+                // Blast frames locally to socket continuously 
+                setInterval(() => {
+                    if(!streamActive) return;
+                    canvas.width = video.videoWidth || 320;
+                    canvas.height = video.videoHeight || 240;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    // Medium quality JPEG string wrapper
+                    const frameData = canvas.toDataURL('image/jpeg', 0.5); 
+                    socket.emit('video_frame', { session_id: sessionId, image: frameData });
+                }, 100); // 10 fps
+            })
+            .catch(err => {
+                alert("Camera locked or unavailable on phone: " + err);
+            });
+
+        document.getElementById('btn-snap').addEventListener('click', () => {
+            streamActive = false;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const highResData = canvas.toDataURL('image/jpeg', 0.9);
+            
+            socket.emit('remote_capture', { session_id: sessionId, image: highResData });
+            document.body.innerHTML = "<h2 style='text-align:center;'>Identity Capture Sent!</h2><p>Look back at your laptop screen.</p>";
+            if(video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); }
+        });
+    </script>
+</body>
+</html>
