@@ -3,6 +3,8 @@ let faceCapturedData = null;
 let fingerprintScanned = false;
 let selectedCandidateId = null;
 let currentStream = null;
+let lastBiometricData = null; // Technical analysis storage
+let lastBiometricData = null; // Technical analysis storage
 
 // DOM Elements
 const steps = {
@@ -154,6 +156,12 @@ btnSnap.addEventListener('click', () => {
             facePreview.src = faceCapturedData;
             facePreview.style.display = 'block';
             
+            // Update Enrollment Previews
+            document.getElementById('enroll-face-preview').src = faceCapturedData;
+            document.getElementById('enroll-face-preview').style.display = 'block';
+            document.getElementById('enroll-face-placeholder').style.display = 'none';
+            checkEnrollmentReady();
+
             finalizeCapture();
         }, 1500); // 1.5s scan animation
     } else {
@@ -259,6 +267,7 @@ document.getElementById('btn-submit-bios').addEventListener('click', async () =>
 
         if(!res.ok) throw new Error(data.error || "Unknown server error");
 
+        lastBiometricData = data; 
         loadReviewData();
     } catch(err) {
         console.error("Biometric Fetch Error:", err);
@@ -290,20 +299,105 @@ async function loadReviewData() {
         document.getElementById('rev-address').textContent = voter.address;
         document.getElementById('rev-face').src = voter.face_data;
 
+        if (lastBiometricData) {
+            displayTechnicalAnalysis(lastBiometricData);
+        }
+
         switchStep('review');
     } catch(err) {
         alert("Failed to load review data: " + err.message);
     }
 }
 
+function displayTechnicalAnalysis(data) {
+    const landmarkList = document.getElementById('landmark-stats');
+    const matrixGrid = document.getElementById('matrix-display');
+    landmarkList.innerHTML = '';
+    matrixGrid.innerHTML = '';
+
+    if (data.landmarks) {
+        Object.entries(data.landmarks).forEach(([feature, count]) => {
+            const item = document.createElement('div');
+            item.className = 'landmark-item';
+            item.innerHTML = `<span>${feature.replace(/_/g, ' ')}</span> <strong>${count} pts</strong>`;
+            landmarkList.appendChild(item);
+        });
+    }
+
+    if (data.matrix) {
+        data.matrix.forEach((val, i) => {
+            const cell = document.createElement('div');
+            cell.className = 'matrix-cell';
+            const intensity = Math.abs(val) * 255;
+            cell.style.backgroundColor = `rgba(16, 185, 129, ${Math.min(1, intensity)})`;
+            setTimeout(() => { matrixGrid.appendChild(cell); }, i * 5);
+        });
+    }
+}
+    }
+}
+
+function displayTechnicalAnalysis(data) {
+    const landmarkList = document.getElementById('landmark-stats');
+    const matrixGrid = document.getElementById('matrix-display');
+    landmarkList.innerHTML = '';
+    matrixGrid.innerHTML = '';
+
+    if (data.landmarks) {
+        Object.entries(data.landmarks).forEach(([feature, count]) => {
+            const item = document.createElement('div');
+            item.className = 'landmark-item';
+            item.innerHTML = `<span>${feature.replace(/_/g, ' ')}</span> <strong>${count} pts</strong>`;
+            landmarkList.appendChild(item);
+        });
+    }
+
+    if (data.matrix) {
+        data.matrix.forEach((val, i) => {
+            const cell = document.createElement('div');
+            cell.className = 'matrix-cell';
+            const intensity = Math.abs(val) * 255;
+            cell.style.backgroundColor = `rgba(16, 185, 129, ${Math.min(1, intensity)})`;
+            setTimeout(() => { matrixGrid.appendChild(cell); }, i * 5);
+        });
+    }
+}
+
+function displayTechnicalAnalysis(data) {
+    const landmarkList = document.getElementById('landmark-stats');
+    const matrixGrid = document.getElementById('matrix-display');
+    landmarkList.innerHTML = '';
+    matrixGrid.innerHTML = '';
+
+    if (data.landmarks) {
+        Object.entries(data.landmarks).forEach(([feature, count]) => {
+            const item = document.createElement('div');
+            item.className = 'landmark-item';
+            item.innerHTML = `<span>${feature.replace(/_/g, ' ')}</span> <strong>${count} pts</strong>`;
+            landmarkList.appendChild(item);
+        });
+    }
+
+    if (data.matrix) {
+        data.matrix.forEach((val, i) => {
+            const cell = document.createElement('div');
+            cell.className = 'matrix-cell';
+            const intensity = Math.abs(val) * 255;
+            cell.style.backgroundColor = `rgba(16, 185, 129, ${Math.min(1, intensity)})`;
+            setTimeout(() => { matrixGrid.appendChild(cell); }, i * 5);
+        });
+    }
+}
+
 document.getElementById('btn-confirm-review').addEventListener('click', () => {
-    loadCandidates();
+    loadCandidates(); 
 });
 
 // -------------------------
 // STEP 3: Vote
 // -------------------------
-async function loadCandidates() {
+async function loadCandidates() {    
+
     try {
         const res = await fetch('/api/candidates');
         const candidates = await res.json();
@@ -518,4 +612,64 @@ document.getElementById('btn-hw-sim').addEventListener('click', () => {
 document.getElementById('btn-hw-fido').addEventListener('click', () => {
     alert("Success! To cross-link your phone via FIDO2 natively, simply use the actual Fingerprint Scanner button on the main panel. The system will dispatch a secure hardware polling event to activate platform authenticators!");
     hwModal.classList.remove('open');
+});
+
+// -------------------------
+// Enrollment Manager
+// -------------------------
+const enrollModal = document.getElementById('enroll-modal');
+const enrollNameInput = document.getElementById('enroll-name');
+const btnConfirmEnroll = document.getElementById('btn-confirm-enroll');
+
+document.getElementById('btn-open-enroll').addEventListener('click', () => {
+    enrollModal.classList.add('open');
+});
+
+document.getElementById('close-enroll').addEventListener('click', () => {
+    enrollModal.classList.remove('open');
+});
+
+enrollNameInput.addEventListener('input', checkEnrollmentReady);
+
+function checkEnrollmentReady() {
+    if (enrollNameInput.value.trim().length > 2 && faceCapturedData) {
+        btnConfirmEnroll.disabled = false;
+        btnConfirmEnroll.classList.add('glow-pulse');
+    } else {
+        btnConfirmEnroll.disabled = true;
+        btnConfirmEnroll.classList.remove('glow-pulse');
+    }
+}
+
+btnConfirmEnroll.addEventListener('click', async () => {
+    const name = enrollNameInput.value.trim();
+    const errorEl = document.getElementById('enroll-error');
+    errorEl.textContent = '';
+    
+    btnConfirmEnroll.disabled = true;
+    btnConfirmEnroll.textContent = "Integrating Biometric Profile...";
+
+    try {
+        const res = await fetch('/api/enroll', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                name: name,
+                face_data: faceCapturedData
+            })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Enrollment failed");
+
+        alert(data.message);
+        enrollModal.classList.remove('open');
+        
+        // Auto-trigger identification to show it works
+        document.getElementById('btn-submit-bios').click();
+    } catch (err) {
+        errorEl.textContent = "Enrollment Error: " + err.message;
+        btnConfirmEnroll.disabled = false;
+        btnConfirmEnroll.textContent = "Securely Link Identity";
+    }
 });

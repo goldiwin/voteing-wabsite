@@ -1,9 +1,7 @@
 flask
 flask-socketio
-deepface
+mediapipe
 opencv-python-headless
 numpy<2
 gunicorn
 eventlet
-tf-keras
-tensorflow-cpu

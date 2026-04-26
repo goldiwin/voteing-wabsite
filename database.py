@@ -42,13 +42,10 @@ def init_db():
 
     # Seed Mock Biometric Identities 
     voters = [
-        ('6105 2059 34 50', 'NAT-ID-88392', '125 17899', 'Suryansh Mishra', 'Shri Vinod Kumar Mishra', 'Male', 20, 'uttar pradesh , pilibhit , bisalpur , mighauna, 262201'),
-        ('1234567', '9876', '9876-VID', 'Tanisk', 'Suryansh Mishra', 'Male', 322, 'Uttarakhand'),
-        ('4455 6677 88 99', 'NAT-ID-11223', 'VID-003', 'Priya Sharma', 'Rajesh Sharma', 'Female', 25, 'Delhi, India'),
-        ('9988 7766 55 44', 'NAT-ID-44556', 'VID-004', 'Amit Verma', 'Sanjay Verma', 'Male', 29, 'Mumbai, Maharashtra'),
-        ('1122 3344 55 66', 'NAT-ID-77889', 'VID-005', 'Anjali Gupta', 'Manoj Gupta', 'Female', 22, 'Bangalore, Karnataka'),
-        ('566789', '125188888', '125188888-VID', 'Kamal Preet', 'Suryansh Mishra', 'Male', 20, 'Punjab'),
-        ('678989', '678987654', '678987654-VID', 'Mansi', 'Suryansh Mishra', 'Female', 89, 'Gurgaon')
+        ('6105 2059 34 50', 'NAT-ID-001', 'VID-001', 'Suryansh Mishra', 'Shri Vinod Kumar Mishra', 'Male', 20, 'Uttar Pradesh, Pilibhit'),
+        ('1234 5678 90 12', 'NAT-ID-002', 'VID-002', 'Kanwal Preet Kaur', 'Suryansh Mishra', 'Female', 22, 'Punjab'),
+        ('4455 6677 88 99', 'NAT-ID-003', 'VID-003', 'Tanisk', 'Suryansh Mishra', 'Male', 21, 'Uttarakhand'),
+        ('9988 7766 55 44', 'NAT-ID-004', 'VID-004', 'Mansi', 'Suryansh Mishra', 'Female', 23, 'Gurgaon')
     ]
     cursor.executemany('''
         INSERT OR IGNORE INTO voters (aadhaar_number, id_card_number, voter_id_number, name, father_name, sex, age, address)

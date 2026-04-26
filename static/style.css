@@ -511,11 +511,596 @@ video, img#face-preview {
     margin-bottom: 40px;
 }
 
-/* Responsive */
-@media (max-width: 600px) {
-    .biometric-grid, .review-panel {
+/* =============================================
+   RESPONSIVE DESIGN - Mobile First Breakpoints
+   ============================================= */
+
+/* Tablets and small laptops (≤1024px) */
+@media (max-width: 1024px) {
+    .app-container {
+        max-width: 95%;
+        padding: 30px 25px;
+    }
+
+    .orbit-container {
+        width: 450px;
+        height: 450px;
+    }
+
+    .person {
+        font-size: 1.8rem;
+        transform: translate(-50%, -50%) rotate(calc(var(--i) * 45deg)) translateY(-170px) rotate(calc(var(--i) * -45deg));
+    }
+
+    .radar-ring {
+        width: 220px;
+        height: 220px;
+    }
+}
+
+/* Tablets (≤768px) */
+@media (max-width: 768px) {
+    body {
+        padding: 12px;
+        align-items: flex-start;
+    }
+
+    .app-container {
+        max-width: 100%;
+        padding: 24px 18px;
+        border-radius: 18px;
+    }
+
+    .header h2 {
+        font-size: 1.5rem;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .header p {
+        font-size: 0.9rem;
+    }
+
+    .biometric-grid {
         grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .bio-card {
+        padding: 16px;
+    }
+
+    .review-panel {
         flex-direction: column;
+        gap: 20px;
+        padding: 18px;
+    }
+
+    .review-text p {
+        font-size: 1rem;
+    }
+
+    .review-bios {
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    .review-bios img {
+        width: 90px;
+        height: 90px;
+    }
+
+    .candidate-card {
+        padding: 16px;
+    }
+
+    .candidate-name {
+        font-size: 1.05rem;
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 22px 18px;
+        border-radius: 16px;
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+
+    .hw-btn i {
+        font-size: 1.6rem;
+        margin-right: 12px;
+    }
+
+    .main-flag {
+        width: 90px;
+    }
+
+    .massive-icon {
+        font-size: 3.5rem;
+    }
+
+    /* Splash screen adjustments */
+    .orbit-container {
+        width: 350px;
+        height: 350px;
+    }
+
+    .person {
+        font-size: 1.5rem;
+        transform: translate(-50%, -50%) rotate(calc(var(--i) * 45deg)) translateY(-130px) rotate(calc(var(--i) * -45deg));
+    }
+
+    .radar-ring {
+        width: 180px;
+        height: 180px;
+    }
+
+    .splash-text {
+        font-size: 2rem;
+    }
+
+    .vote-first {
+        font-size: 1.1rem;
+        letter-spacing: 6px;
+    }
+
+    .eci-text {
+        font-size: 1.1rem;
+        letter-spacing: 2px;
+    }
+
+    .eci-text small {
+        font-size: 0.75rem;
+        letter-spacing: 4px;
+    }
+
+    .flag-icon {
+        width: 42px;
+    }
+
+    .eci-header {
+        gap: 12px;
+        top: 20px;
+        padding: 0 10px;
+    }
+
+    .deterrence-message {
+        font-size: 0.75rem;
+        padding: 12px 14px;
+        margin-top: 30px;
+        max-width: 90%;
+    }
+
+    .ec-watermark {
+        font-size: 0.7rem;
+        bottom: 15px;
+        right: 15px;
+        letter-spacing: 2px;
+    }
+
+    .vault-lock {
+        width: 110px;
+        height: 110px;
+    }
+
+    #lock-print {
+        font-size: 55px;
+    }
+
+    .voting-hand {
+        font-size: 4.5rem;
+    }
+
+    #btn-open-hw {
+        font-size: 0.75rem !important;
+        padding: 6px 12px !important;
+    }
+
+    .camera-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .camera-dropdown {
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+/* Small phones (≤600px) */
+@media (max-width: 600px) {
+    body {
+        padding: 8px;
+    }
+
+    .app-container {
+        padding: 20px 14px;
+        border-radius: 16px;
+        box-shadow: 0 15px 30px -8px rgba(0, 0, 0, 0.5);
+    }
+
+    .header {
+        margin-bottom: 20px;
+    }
+
+    .header h2 {
+        font-size: 1.3rem;
+    }
+
+    .header p {
+        font-size: 0.85rem;
+    }
+
+    .biometric-grid {
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+
+    .bio-card {
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .bio-card h3 {
+        font-size: 1rem;
+    }
+
+    .video-container {
+        margin: 10px 0;
+        border-radius: 10px;
+    }
+
+    .fingerprint-container {
+        width: 85px;
+        height: 100px;
+        margin: 14px auto;
+    }
+
+    .fingerprint-container i {
+        font-size: 60px;
+    }
+
+    #fp-status {
+        font-size: 0.85rem;
+    }
+
+    .btn {
+        padding: 12px;
+        font-size: 0.9rem;
+        border-radius: 10px;
+    }
+
+    .review-panel {
+        padding: 14px;
+        border-radius: 14px;
+        gap: 16px;
+    }
+
+    .review-text p {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+
+    .review-bios img {
+        width: 80px;
+        height: 80px;
+    }
+
+    .verified-badge {
+        font-size: 0.85rem;
+    }
+
+    .candidate-card {
+        padding: 14px;
+        border-radius: 10px;
+    }
+
+    .candidate-name {
+        font-size: 1rem;
+    }
+
+    .candidates-list {
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .massive-icon {
+        font-size: 3rem;
+    }
+
+    .success-header {
+        margin-bottom: 25px;
+    }
+
+    .main-flag-container {
+        margin-bottom: 14px;
+    }
+
+    .main-flag {
+        width: 75px;
+    }
+
+    #btn-reset-demo {
+        font-size: 0.85rem;
+    }
+
+    .modal-content {
+        width: 96%;
+        padding: 18px 14px;
+        border-radius: 14px;
+    }
+
+    .modal-header h3 {
+        font-size: 1rem;
+    }
+
+    .hw-btn {
+        padding: 12px;
+    }
+
+    .hw-btn i {
+        font-size: 1.4rem;
+        margin-right: 10px;
+    }
+
+    .hw-text strong {
+        font-size: 0.9rem;
+    }
+
+    .hw-text span {
+        font-size: 0.7rem;
+    }
+
+    /* Splash screen small phone */
+    .orbit-container {
+        width: 280px;
+        height: 280px;
+    }
+
+    .person {
+        font-size: 1.2rem;
+        transform: translate(-50%, -50%) rotate(calc(var(--i) * 45deg)) translateY(-105px) rotate(calc(var(--i) * -45deg));
+    }
+
+    .radar-ring {
+        width: 140px;
+        height: 140px;
+    }
+
+    .splash-text {
+        font-size: 1.5rem;
+    }
+
+    .vote-first {
+        font-size: 0.85rem;
+        letter-spacing: 4px;
+    }
+
+    .eci-text {
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+    }
+
+    .eci-text small {
+        font-size: 0.65rem;
+        letter-spacing: 2px;
+    }
+
+    .flag-icon {
+        width: 35px;
+    }
+
+    .eci-header {
+        gap: 8px;
+        top: 15px;
+    }
+
+    .deterrence-message {
+        font-size: 0.65rem;
+        padding: 10px 12px;
+        margin-top: 20px;
+        letter-spacing: 0.5px;
+        max-width: 95%;
+    }
+
+    .ec-watermark {
+        font-size: 0.6rem;
+        bottom: 10px;
+        right: 10px;
+        letter-spacing: 1px;
+    }
+
+    .vault-lock {
+        width: 90px;
+        height: 90px;
+    }
+
+    #lock-print {
+        font-size: 45px;
+    }
+
+    .voting-hand {
+        font-size: 3.5rem;
+    }
+
+    /* QR overlay mobile adjustments */
+    #qr-overlay h4 {
+        font-size: 0.9rem !important;
+    }
+
+    #qr-overlay p {
+        font-size: 0.7rem !important;
+        padding: 0 10px !important;
+    }
+
+    #qr-code-img {
+        width: 140px !important;
+        height: 140px !important;
+    }
+}
+
+/* Extra small phones (≤380px) */
+@media (max-width: 380px) {
+    body {
+        padding: 4px;
+    }
+
+    .app-container {
+        padding: 16px 10px;
+        border-radius: 14px;
+    }
+
+    .header h2 {
+        font-size: 1.1rem;
+    }
+
+    .header p {
+        font-size: 0.8rem;
+    }
+
+    .bio-card {
+        padding: 12px;
+    }
+
+    .btn {
+        padding: 10px;
+        font-size: 0.85rem;
+    }
+
+    .orbit-container {
+        width: 240px;
+        height: 240px;
+    }
+
+    .person {
+        font-size: 1rem;
+        transform: translate(-50%, -50%) rotate(calc(var(--i) * 45deg)) translateY(-90px) rotate(calc(var(--i) * -45deg));
+    }
+
+    .radar-ring {
+        width: 120px;
+        height: 120px;
+    }
+
+    .splash-text {
+        font-size: 1.2rem;
+    }
+
+    .vote-first {
+        font-size: 0.7rem;
+        letter-spacing: 3px;
+    }
+
+    .deterrence-message {
+        font-size: 0.6rem;
+        padding: 8px 10px;
+        margin-top: 15px;
+    }
+
+    .review-text p {
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+    }
+
+    .main-flag {
+        width: 60px;
+    }
+
+    #btn-open-hw {
+        font-size: 0.7rem !important;
+        padding: 5px 10px !important;
+    }
+
+    .candidate-card {
+        padding: 12px;
+    }
+
+    .candidate-name {
+        font-size: 0.9rem;
+    }
+}
+
+/* Landscape phones */
+@media (max-height: 500px) and (orientation: landscape) {
+    body {
+        align-items: flex-start;
+        padding: 8px;
+    }
+
+    .app-container {
+        padding: 16px;
+    }
+
+    .header {
+        margin-bottom: 16px;
+    }
+
+    .biometric-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .main-flag {
+        width: 50px;
+    }
+
+    .main-flag-container {
+        margin-bottom: 8px;
+    }
+
+    .header h2 {
+        font-size: 1.2rem;
+    }
+
+    .orbit-container {
+        width: 260px;
+        height: 260px;
+    }
+
+    .splash-text {
+        font-size: 1.3rem;
+    }
+
+    .deterrence-message {
+        margin-top: 10px;
+        font-size: 0.6rem;
+        padding: 6px 10px;
+    }
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+    .btn {
+        min-height: 48px;
+    }
+
+    .candidate-card {
+        min-height: 56px;
+    }
+
+    .fingerprint-container {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .card-3d {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    .btn.outline:hover {
+        background: transparent;
+    }
+
+    .candidate-card:hover {
+        border-color: var(--border);
+        background: rgba(15, 23, 42, 0.6);
+    }
+
+    .candidate-card.selected:hover {
+        border-color: var(--accent);
+        background: rgba(16, 185, 129, 0.1);
     }
 }
 
@@ -844,4 +1429,120 @@ video, img#face-preview {
 @keyframes appReveal {
     0% { opacity: 0; transform: translateY(30px) scale(0.95); }
     100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* =============================================
+   TECHNICAL BIOMETRIC ANALYSIS STYLES
+   ============================================= */
+.technical-panel {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid var(--primary);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 20px;
+    margin-bottom: 30px;
+    animation: slideUp 0.6s ease-out both;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.tech-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+}
+
+.tech-header h3 {
+    font-size: 1.1rem;
+    color: var(--primary);
+    margin: 0;
+}
+
+.tech-status {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    background: rgba(16, 185, 129, 0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    50% { opacity: 0.5; }
+}
+
+.tech-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.tech-column h4 {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.landmark-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.landmark-item {
+    display: flex;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.landmark-item span {
+    text-transform: capitalize;
+    color: var(--text-muted);
+}
+
+.landmark-item strong {
+    color: var(--primary);
+}
+
+.matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    gap: 3px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.matrix-cell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    transition: transform 0.2s;
+}
+
+.matrix-cell:hover {
+    transform: scale(1.5);
+    z-index: 10;
+    box-shadow: 0 0 10px var(--accent);
+}
+
+@media (max-width: 768px) {
+    .tech-grid {
+        grid-template-columns: 1fr;
+    }
+    .matrix-grid {
+        grid-template-columns: repeat(8, 1fr);
+    }
 }

@@ -97,7 +97,10 @@
                         <canvas id="canvas-snap" style="display:none;"></canvas>
                         <img id="face-preview" style="display:none;" />
                     </div>
-                    <button type="button" class="btn outline" id="btn-snap"><i class='bx bx-camera'></i> Scan Face</button>
+                    <div class="button-group" style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button type="button" class="btn outline" id="btn-snap" style="flex: 1;"><i class='bx bx-camera'></i> Scan Face</button>
+                        <button type="button" class="btn outline" id="btn-open-enroll" style="flex: 1; border-color: var(--accent); color: var(--accent);"><i class='bx bx-user-plus'></i> Enroll Identity</button>
+                    </div>
                 </div>
 
                 <!-- Fingerprint Simulation -->
@@ -139,6 +142,28 @@
                 <div class="review-bios">
                     <img id="rev-face" src="" alt="Face Scan" />
                     <div class="verified-badge"><i class='bx bx-check-circle'></i> Biometrics Matched</div>
+                </div>
+            </div>
+
+            <!-- Technical Analysis Panel -->
+            <div class="technical-panel card-3d">
+                <div class="tech-header">
+                    <h3><i class='bx bx-code-alt'></i> Technical Biometric Analysis</h3>
+                    <span class="tech-status">Live Matrix Decryption</span>
+                </div>
+                <div class="tech-grid">
+                    <div class="tech-column">
+                        <h4>Facial Landmark Dimensions</h4>
+                        <div id="landmark-stats" class="landmark-list">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+                    <div class="tech-column">
+                        <h4>Neural Encoding Matrix (128-d)</h4>
+                        <div id="matrix-display" class="matrix-grid">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -214,6 +239,32 @@
                     </div>
                 </button>
             </div>
+        </div>
+    </div>
+    <!-- ENROLLMENT MODAL -->
+    <div id="enroll-modal" class="modal-overlay">
+        <div class="modal-content card-3d">
+            <div class="modal-header">
+                <h3><i class='bx bx-user-plus'></i> Secure Biometric Enrollment</h3>
+                <i class='bx bx-x' id="close-enroll"></i>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom: 20px;">Link your captured face profile to a Government ID record.</p>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display:block; margin-bottom:8px; font-size:0.9rem; color:var(--primary);">Full Name (as per Aadhaar)</label>
+                <input type="text" id="enroll-name" placeholder="e.g. Suryansh Mishra" style="width:100%; padding:12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:white; outline:none;">
+            </div>
+
+            <div class="enroll-preview" style="margin-bottom: 20px; text-align:center;">
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">Face Profile to be Enrolled:</p>
+                <img id="enroll-face-preview" src="" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid var(--accent); margin:0 auto; display:none;">
+                <div id="enroll-face-placeholder" style="width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.05); border:2px dashed rgba(255,255,255,0.2); margin:0 auto; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">
+                    <i class='bx bx-camera' style="font-size:2rem;"></i>
+                </div>
+            </div>
+
+            <button class="btn primary" id="btn-confirm-enroll" disabled>Securely Link Identity</button>
+            <div id="enroll-error" class="error-msg" style="margin-top:10px;"></div>
         </div>
     </div>
 
