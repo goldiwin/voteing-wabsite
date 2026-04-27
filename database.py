@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-def init_db():
+def init_db(  ):
     conn = sqlite3.connect('voters.db')
     cursor = conn.cursor()
 

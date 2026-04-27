@@ -2,7 +2,9 @@ services:
   - type: web
     name: secure-voting
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: >
+      pip install -r requirements.txt &&
+      python -c "import urllib.request, os; url='https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task'; os.path.exists('face_landmarker.task') or urllib.request.urlretrieve(url, 'face_landmarker.task'); print('Model ready.')"
     startCommand: gunicorn --worker-class eventlet -w 1 --timeout 120 --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: PYTHON_VERSION

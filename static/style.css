@@ -1546,3 +1546,171 @@ video, img#face-preview {
         grid-template-columns: repeat(8, 1fr);
     }
 }
+
+/* ============================================================
+   REAL-TIME FACE SCAN — Status Label & Result Overlay
+   ============================================================ */
+
+/* Small label above video showing scan state */
+.scan-label {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    transition: background 0.4s, color 0.4s;
+}
+
+.label-waiting {
+    background: rgba(148, 163, 184, 0.15);
+    color: var(--text-muted);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.label-detecting {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--primary);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    animation: label-pulse 1.2s infinite alternate;
+}
+
+.label-scanning {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    animation: label-pulse 0.6s infinite alternate;
+}
+
+@keyframes label-pulse {
+    from { opacity: 0.7; }
+    to   { opacity: 1; }
+}
+
+/* Overlay that sits on top of the video container */
+.scan-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+    border-radius: 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    background: transparent;
+}
+
+.scan-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Verdict card inside the overlay */
+.scan-verdict {
+    text-align: center;
+    padding: 28px 36px;
+    border-radius: 18px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: verdict-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes verdict-pop {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+/* VALID — green glow */
+.scan-verdict.valid {
+    background: rgba(16, 185, 129, 0.18);
+    border: 2px solid rgba(16, 185, 129, 0.55);
+    animation: verdict-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+               valid-glow 1s 0.35s infinite alternate;
+}
+
+@keyframes valid-glow {
+    from { box-shadow: 0 0 20px rgba(16,185,129,0.3); }
+    to   { box-shadow: 0 0 50px rgba(16,185,129,0.75); }
+}
+
+/* INVALID — red with shake */
+.scan-verdict.invalid {
+    background: rgba(239, 68, 68, 0.18);
+    border: 2px solid rgba(239, 68, 68, 0.55);
+    animation: verdict-pop 0.25s ease both, invalid-shake 0.45s 0.25s ease both;
+}
+
+@keyframes invalid-shake {
+    0%   { transform: translateX(0);    }
+    20%  { transform: translateX(-10px);}
+    40%  { transform: translateX(10px); }
+    60%  { transform: translateX(-7px); }
+    80%  { transform: translateX(7px);  }
+    100% { transform: translateX(0);    }
+}
+
+/* Verdict content pieces */
+.verdict-icon {
+    font-size: 3rem;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.verdict-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+}
+
+.scan-verdict.valid  .verdict-title { color: #10b981; }
+.scan-verdict.invalid .verdict-title { color: #ef4444; }
+
+.verdict-name {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 6px;
+}
+
+.verdict-sub {
+    font-size: 0.8rem;
+    color: rgba(248, 250, 252, 0.65);
+    max-width: 220px;
+    margin: 0 auto;
+    line-height: 1.4;
+}
+
+/* Continuous laser sweep on the live video feed */
+.video-container::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: sweep 2.5s linear infinite;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+@keyframes sweep {
+    0%   { top: 0%;   opacity: 0.8; }
+    45%  { opacity: 0.9; }
+    50%  { top: 100%; opacity: 0.8; }
+    95%  { opacity: 0.9; }
+    100% { top: 0%;   opacity: 0.8; }
+}
+
+/* Hide the sweep when overlay is showing a verdict */
+.scan-overlay.visible ~ .video-container::after,
+.video-container:has(.scan-overlay.visible)::after {
+    opacity: 0;
+}

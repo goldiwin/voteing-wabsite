@@ -1,6 +1,6 @@
 flask
 flask-socketio
-mediapipe
+mediapipe==0.10.11
 opencv-python-headless
 numpy<2
 gunicorn

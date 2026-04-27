@@ -7,6 +7,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+    <!-- MediaPipe FaceMesh -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -64,48 +67,55 @@
 
     <main class="app-container">
         
-        <!-- STEP 1 (NEW DEFAULT): Biometrics -->
         <section id="step-biometrics" class="step active">
             <div class="header">
                 <div class="main-flag-container">
                     <img src="/static/images/india_flag.png" class="main-flag" alt="Government of India">
                 </div>
                 <h2><i class='bx bx-scan'></i> Automated Identity Lookup</h2>
-                <p>Provide your biometric data to securely retrieve your Government ID details.</p>
+                <p>Look directly at the camera. The system scans continuously — no button needed.</p>
                 <button type="button" class="btn outline" id="btn-open-hw" style="width: auto; display: inline-block; padding: 8px 15px; margin-top: 10px; font-size: 0.8rem;">
                     <i class='bx bx-usb'></i> Connect External Hardware Sensor
                 </button>
             </div>
 
             <div class="biometric-grid">
-                <!-- Face Scan -->
-                <div class="bio-card card-3d">
+                <!-- Face Scan (real-time, no button) -->
+                <div class="bio-card card-3d" style="position:relative;">
                     <div class="camera-header">
-                        <h3>Face Match</h3>
+                        <h3>Live Face Scan</h3>
                         <select id="camera-select" class="camera-dropdown"></select>
                     </div>
-                    <div class="video-container">
+
+                    <!-- Status label -->
+                    <div id="scan-status-label" class="scan-label label-waiting">👁 Initialising camera…</div>
+
+                    <div class="video-container" style="position:relative;">
                         <div id="qr-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.95); z-index:20; flex-direction:column; align-items:center; justify-content:center;">
                             <h4 style="margin-bottom:15px;"><i class="bx bx-wifi"></i> Pair Mobile Sensor</h4>
                             <img id="qr-code-img" src="" width="180" height="180" style="border:5px solid white; border-radius:10px;" />
-                            <p style="font-size:0.8rem; margin-top:15px; color:var(--text-muted); padding:0 20px; text-align:center;">Aim your phone's standard camera at this code.<br>A live connection will be bridged via WiFi instantly.</p>
+                            <p style="font-size:0.8rem; margin-top:15px; color:var(--text-muted); padding:0 20px; text-align:center;">Aim your phone's camera at this code.<br>A live connection will be bridged via WiFi instantly.</p>
                         </div>
 
                         <video id="video-stream" autoplay playsinline></video>
                         <img id="remote-stream-target" style="display:none; width:100%; height:100%; object-fit:cover;" />
                         <div class="laser-scanner" id="laser-overlay"></div>
                         <canvas id="canvas-snap" style="display:none;"></canvas>
-                        <img id="face-preview" style="display:none;" />
+
+                        <!-- ✅ Scan Result Overlay -->
+                        <div id="scan-result-overlay" class="scan-overlay">
+                            <!-- Filled dynamically -->
+                        </div>
                     </div>
-                    <div class="button-group" style="display: flex; gap: 10px; margin-top: 15px;">
-                        <button type="button" class="btn outline" id="btn-snap" style="flex: 1;"><i class='bx bx-camera'></i> Scan Face</button>
-                        <button type="button" class="btn outline" id="btn-open-enroll" style="flex: 1; border-color: var(--accent); color: var(--accent);"><i class='bx bx-user-plus'></i> Enroll Identity</button>
+
+                    <div style="display:flex; gap:10px; margin-top:15px;">
+                        <button type="button" class="btn outline" id="btn-open-enroll" style="flex:1; border-color:var(--accent); color:var(--accent);"><i class='bx bx-user-plus'></i> Enroll New Identity</button>
                     </div>
                 </div>
 
-                <!-- Fingerprint Simulation -->
+                <!-- Fingerprint (supplementary, optional) -->
                 <div class="bio-card card-3d" id="fp-card">
-                    <h3>Fingerprint Match</h3>
+                    <h3>Fingerprint (Optional)</h3>
                     <div class="fingerprint-container" id="fp-area">
                         <i class='bx bx-fingerprint'></i>
                         <div class="scan-line"></div>
@@ -114,7 +124,6 @@
                 </div>
             </div>
 
-            <button type="button" class="btn primary" id="btn-submit-bios" disabled>Fetch Identity from Database</button>
             <div class="error-msg" id="bio-error"></div>
         </section>
 

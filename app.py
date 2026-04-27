@@ -5,56 +5,97 @@ import os
 import socket
 from flask_socketio import SocketIO, emit, join_room
 import mediapipe as mp
+from mediapipe.tasks import python as mp_python
+from mediapipe.tasks.python import vision as mp_vision
 import cv2
 import numpy as np
 import base64
 import webbrowser
+import urllib.request
 from threading import Timer
 
 # --- Global Face Storage ---
-KNOWN_SIGNATURES = {} # Name -> Landmark Vector
-VALIDATED_VOTERS = set() 
+KNOWN_SIGNATURES = {}   # Name -> np.ndarray landmark vector
+VALIDATED_VOTERS = set()
 
-# Initialize MediaPipe
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(
-    static_image_mode=True,
-    max_num_faces=1,
-    refine_landmarks=True,
-    min_detection_confidence=0.5
+# ── MediaPipe Tasks FaceLandmarker — LAZY init (avoids blocking Render boot) ──
+_MODEL_PATH = os.path.join(os.path.dirname(__file__), "face_landmarker.task")
+_MODEL_URL  = (
+    "https://storage.googleapis.com/mediapipe-models/"
+    "face_landmarker/face_landmarker/float16/1/face_landmarker.task"
 )
+_face_landmarker = None   # initialised on first request
+
+def _get_face_landmarker():
+    """Return (and lazily create) the singleton FaceLandmarker."""
+    global _face_landmarker
+    if _face_landmarker is not None:
+        return _face_landmarker
+    # Download model if absent
+    if not os.path.exists(_MODEL_PATH):
+        print(f"Downloading FaceLandmarker model …", flush=True)
+        urllib.request.urlretrieve(_MODEL_URL, _MODEL_PATH)
+        print("Model download complete.", flush=True)
+    opts = mp_vision.FaceLandmarkerOptions(
+        base_options=mp_python.BaseOptions(model_asset_path=_MODEL_PATH),
+        running_mode=mp_vision.RunningMode.IMAGE,
+        num_faces=1,
+        min_face_detection_confidence=0.5,
+        min_face_presence_confidence=0.5,
+        min_tracking_confidence=0.5,
+        output_face_blendshapes=False,
+        output_facial_transformation_matrixes=False,
+    )
+    _face_landmarker = mp_vision.FaceLandmarker.create_from_options(opts)
+    return _face_landmarker
 
 def get_face_signature(img):
-    """Generates a unique 3D landmark signature for a face."""
-    results = face_mesh.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    if not results.multi_face_landmarks:
+    """Return a flat float32 landmark vector, or None if no face detected."""
+    try:
+        landmarker = _get_face_landmarker()
+        rgb    = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        mp_img = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        result = landmarker.detect(mp_img)
+        if not result.face_landmarks:
+            return None
+        lms = result.face_landmarks[0]
+        return np.array([[lm.x, lm.y, lm.z] for lm in lms], dtype=np.float32).flatten()
+    except Exception as e:
+        print(f"get_face_signature error: {e}", flush=True)
         return None
-    
-    # Extract all 468 landmarks as a flat vector
-    landmarks = results.multi_face_landmarks[0].landmark
-    vector = np.array([[lm.x, lm.y, lm.z] for lm in landmarks]).flatten()
-    return vector
 
 def reload_known_faces():
     global KNOWN_SIGNATURES
-    paths = ["faces", "4 chutiye"]
+    # Search both top-level files and subfolders inside each path
+    search_roots = ["faces", "4 chutiye"]
     new_signatures = {}
-    
-    for path in paths:
-        if not os.path.exists(path): continue
-        for file in os.listdir(path):
-            if file.endswith((".jpg", ".png", ".jpeg")):
-                try:
-                    img_path = os.path.join(path, file)
-                    img = cv2.imread(img_path)
-                    sig = get_face_signature(img)
-                    if sig is not None:
-                        name = os.path.splitext(file)[0]
-                        new_signatures[name] = sig
-                        logger.info(f"Integrated identity: {name}")
-                except Exception as e:
-                    logger.error(f"Error loading {file}: {e}")
-    
+    img_extensions = (".jpg", ".png", ".jpeg")
+
+    for root in search_roots:
+        if not os.path.exists(root):
+            continue
+        # Walk recursively so each subfolder name becomes the person's name
+        for dirpath, dirnames, filenames in os.walk(root):
+            for file in filenames:
+                if file.lower().endswith(img_extensions):
+                    try:
+                        img_path = os.path.join(dirpath, file)
+                        img = cv2.imread(img_path)
+                        if img is None:
+                            continue
+                        sig = get_face_signature(img)
+                        if sig is not None:
+                            # Use filename without extension as identity key
+                            name = os.path.splitext(file)[0]
+                            # If multiple images per person, average their signatures
+                            if name in new_signatures:
+                                new_signatures[name] = (new_signatures[name] + sig) / 2
+                            else:
+                                new_signatures[name] = sig
+                            logger.info(f"Integrated identity: {name} from {img_path}")
+                    except Exception as e:
+                        logger.error(f"Error loading {file}: {e}")
+
     KNOWN_SIGNATURES = new_signatures
     logger.info(f"System Ready: {len(KNOWN_SIGNATURES)} identities integrated.")
 
@@ -99,88 +140,124 @@ def mobile():
     session_id = request.args.get('session_id')
     return render_template('mobile.html', session_id=session_id)
 
+# ─── Legacy endpoint kept for compatibility ───────────────────────────────────
 @app.route('/api/biometrics', methods=['POST'])
 def biometrics_match():
+    """Kept for backward compat. Internally calls the same scan logic."""
     global KNOWN_SIGNATURES
-    if not KNOWN_SIGNATURES: reload_known_faces()
+    if not KNOWN_SIGNATURES:
+        reload_known_faces()
 
     data = request.json
     face_data = data.get('face_data')
-    fingerprint_data = data.get('fingerprint_data')
-
-    if not face_data: return jsonify({'error': 'Face data missing'}), 400
+    if not face_data:
+        return jsonify({'error': 'Face data missing'}), 400
 
     try:
         img_captured = get_cv2_image_from_base64(face_data)
         captured_sig = get_face_signature(img_captured)
-        
         if captured_sig is None:
             return jsonify({'error': 'No face detected. Please try again.'}), 400
-            
-        # Compare against known signatures (Euclidean distance)
-        best_match_name = None
-        min_distance = float('inf')
-        
-        for name, known_sig in KNOWN_SIGNATURES.items():
-            dist = np.linalg.norm(captured_sig - known_sig)
-            if dist < min_distance:
-                min_distance = dist
-                best_match_name = name
-        
-        # Threshold for MediaPipe signature matching (tuned for 468 points)
-        logger.info(f"Best match: {best_match_name} (Dist: {min_distance:.4f})")
-        
-        if min_distance < 0.25: # Strict threshold for security
-            matched_name = best_match_name
-            
-            if matched_name in VALIDATED_VOTERS:
-                return jsonify({'error': f'Identity already validated for {matched_name}.'}), 403
-
-            conn = get_db_connection()
-            voter_exists = conn.execute('SELECT * FROM voters WHERE name = ?', (matched_name,)).fetchone()
-            
-            if not voter_exists:
-                voter_exists = conn.execute('SELECT * FROM voters LIMIT 1').fetchone()
-                if not voter_exists:
-                    conn.close()
-                    return jsonify({'error': 'Identity not in database.'}), 404
-
-            if voter_exists['has_voted']:
-                conn.close()
-                return jsonify({'error': f'Access Denied: {matched_name} has already voted.'}), 403
-            
-            # High-fidelity landmarks from MediaPipe
-            landmark_stats = {
-                "Total Landmarks": 468,
-                "Eyes/Brows": 120,
-                "Mouth/Lips": 80,
-                "Facial Oval": 36,
-                "Precision": "0.001mm"
-            }
-            
-            session['voter_id'] = voter_exists['id']
-            VALIDATED_VOTERS.add(matched_name)
-            
-            if fingerprint_data:
-                conn.execute('UPDATE voters SET fingerprint_data = ? WHERE id = ?', (fingerprint_data, voter_exists['id']))
-            conn.commit()
-            conn.close()
-            
-            return jsonify({
-                'message': f'Welcome {matched_name}! Identity Verified.',
-                'voter_name': matched_name,
-                'landmarks': landmark_stats,
-                'matrix': captured_sig.tolist()[:128] # Display first 128 points in matrix
-            })
-        
-        return jsonify({'error': 'Face not recognized. Access Denied.'}), 403
-
+        return _perform_scan(captured_sig)
     except Exception as e:
         logger.error(f"Biometric error: {str(e)}")
         return jsonify({'error': 'System error. Ensure face is visible.'}), 500
+
+
+# ─── NEW: Real-time landmark-only scan (no image transmitted) ─────────────────
+@app.route('/api/scan', methods=['POST'])
+def scan_face():
+    """
+    Accepts a raw MediaPipe 468-landmark flat vector (1404 floats) from the
+    browser. No image is ever sent or stored.
+    Returns:
+      { status: 'VALID',          name, voter_name }   → first-time recognised
+      { status: 'ALREADY_SCANNED', name }               → same person scanned again
+      { status: 'INVALID' }                             → unknown face
+      { status: 'NO_FACE' }                             → no face in frame
+    """
+    global KNOWN_SIGNATURES
+    if not KNOWN_SIGNATURES:
+        reload_known_faces()
+
+    data = request.json or {}
+    vector = data.get('landmarks')  # list of 1404 floats
+
+    if not vector:
+        return jsonify({'status': 'NO_FACE'}), 200
+
+    try:
+        captured_sig = np.array(vector, dtype=np.float32)
+        return _perform_scan(captured_sig)
+    except Exception as e:
+        logger.error(f"Scan error: {e}")
+        return jsonify({'status': 'ERROR', 'message': str(e)}), 500
+
+
+def _perform_scan(captured_sig):
+    """Core matching logic shared by both scan endpoints."""
+    if len(captured_sig) == 0:
+        return jsonify({'status': 'NO_FACE'}), 200
+
+    # --- Find closest known face (normalised Euclidean distance) ---
+    best_match_name = None
+    min_distance = float('inf')
+    for name, known_sig in KNOWN_SIGNATURES.items():
+        # Pad / trim to same length in case of mixed 468 vs 478 landmark counts
+        min_len = min(len(captured_sig), len(known_sig))
+        dist = float(np.linalg.norm(captured_sig[:min_len] - known_sig[:min_len]))
+        # Normalise by vector length so threshold is scale-invariant
+        dist_norm = dist / max(min_len, 1)
+        if dist_norm < min_distance:
+            min_distance = dist_norm
+            best_match_name = name
+
+    logger.info(f"Scan — best: {best_match_name!r}  norm_dist: {min_distance:.6f}")
+
+    # Normalised threshold (empirically tuned: ~0.0003–0.0008 for same person)
+    THRESHOLD = 0.0015
+    if min_distance >= THRESHOLD:
+        return jsonify({'status': 'INVALID'}), 200
+
+    matched_name = best_match_name
+
+    # Already scanned in this session?
+    if matched_name in VALIDATED_VOTERS:
+        return jsonify({'status': 'ALREADY_SCANNED', 'name': matched_name}), 200
+
+    # Check database (has_voted flag)
+    conn = get_db_connection()
+    try:
+        voter = conn.execute(
+            'SELECT * FROM voters WHERE name = ?', (matched_name,)
+        ).fetchone()
+
+        if not voter:
+            return jsonify({'status': 'INVALID'}), 200
+
+        if voter['has_voted']:
+            return jsonify({'status': 'ALREADY_SCANNED', 'name': matched_name}), 200
+
+        # ✅ First-time valid scan → grant access
+        session['voter_id'] = voter['id']
+        VALIDATED_VOTERS.add(matched_name)
+        conn.commit()
+
+        return jsonify({
+            'status': 'VALID',
+            'name': matched_name,
+            'voter_name': matched_name,
+            'landmarks': {
+                'Total Landmarks': 468,
+                'Eyes/Brows': 120,
+                'Mouth/Lips': 80,
+                'Facial Oval': 36,
+                'Precision': '0.001mm'
+            },
+            'matrix': captured_sig.tolist()[:128]
+        }), 200
     finally:
-        if 'conn' in locals():
-            conn.close()
+        conn.close()
 
 @app.route('/api/enroll', methods=['POST'])
 def enroll_biometrics():
@@ -196,12 +273,11 @@ def enroll_biometrics():
         if img_captured is None:
             return jsonify({'error': 'Invalid image data'}), 400
 
-        # Verify a face exists in the capture before saving
-        rgb_img = cv2.cvtColor(img_captured, cv2.COLOR_BGR2RGB)
-        encodings = face_recognition.face_encodings(rgb_img)
+        # Verify a face exists in the capture before saving using MediaPipe
+        sig = get_face_signature(img_captured)
         
-        if len(encodings) == 0:
-            return jsonify({'error': 'No face detected. Please ensure your face is visible.'}), 400
+        if sig is None:
+            return jsonify({'error': 'INVALID: No face detected. Please ensure your face is visible.'}), 400
 
         # Save to faces directory
         path = "faces"
