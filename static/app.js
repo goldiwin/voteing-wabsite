@@ -172,16 +172,20 @@ function startRealScanLoop() {
         canvas.height = video.videoHeight || 480;
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Run MediaPipe
+        // Run MediaPipe — using canvas instead of raw video for better browser compatibility
         try {
-            await faceMesh.send({ image: video });
+            console.log("[Scanner] Sending frame to AI...");
+            await faceMesh.send({ image: canvas });
         } catch (e) {
-            console.warn('FaceMesh send error:', e);
+            console.error('[Scanner] AI Engine Error:', e);
             return;
         }
 
         // If we got landmarks, send to backend
-        if (!latestLandmarks || scanLocked) return;
+        if (!latestLandmarks || scanLocked) {
+            if (!latestLandmarks) console.log("[Scanner] No landmarks detected this frame.");
+            return;
+        }
 
         // Flatten 468 x 3 → 1404 floats
         const vector = [];
@@ -192,6 +196,7 @@ function startRealScanLoop() {
         // Lock so we don't flood
         scanLocked = true;
         updateScanStatus('scanning');
+        console.log("[Scanner] Landmarks captured. Sending to server for biometric verification...");
 
         try {
             const res  = await fetch('/api/scan', {
@@ -203,12 +208,13 @@ function startRealScanLoop() {
                 body:    JSON.stringify({ landmarks: vector })
             });
             const data = await res.json();
+            console.log("[Scanner] Server response received:", data.status);
             handleScanResult(data);
         } catch (err) {
-            console.error('Scan fetch error:', err);
+            console.error('[Scanner] Server Fetch Error:', err);
             scanLocked = false; // retry
         }
-    }, 700);
+    }, 500); 
 }
 
 // ── Handle scan result from backend ──────────────────────
