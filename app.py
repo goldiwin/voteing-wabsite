@@ -107,9 +107,15 @@ def reload_known_faces():
                     try:
                         img_path = os.path.join(dirpath, file)
                         img = cv2.imread(img_path)
-                        if img is None: continue
+                        if img is None:
+                            logger.warning(f"Could not read image: {img_path}")
+                            continue
+                        
                         sig = get_face_signature(img)
-                        if sig is None: continue
+                        if sig is None:
+                            logger.warning(f"No face found in image: {img_path}")
+                            continue
+                        
                         import re
                         name = os.path.splitext(file)[0]
                         # Strip suffixes like _1, _2, (1), etc. to group images for the same person
@@ -131,8 +137,15 @@ def reload_known_faces():
     logger.info(f"System Ready: {len(KNOWN_SIGNATURES)} identities integrated.")
 
 def _ensure_faces_loaded():
+    global _FACES_LOADED
     if not _FACES_LOADED:
-        reload_known_faces()
+        logger.info("Scan requested but faces not loaded. Waiting (max 15s)...")
+        start_wait = time.time()
+        while not _FACES_LOADED:
+            if time.time() - start_wait > 15:
+                logger.error("TIMEOUT: Face loading took too long. Proceeding anyway.")
+                break
+            time.sleep(0.5)
 
 def get_cv2_image_from_base64(b64_str):
     if not b64_str or ',' not in b64_str: return None
