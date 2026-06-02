@@ -12,6 +12,13 @@ let scanResult          = null;       // last scan result object
 let selectedCandidateId = null;
 let lastBiometricData   = null;
 
+// Consensus mechanism to prevent "confusion"
+let recognitionConsensus = {
+    name: null,
+    count: 0,
+    required: 1 // Needs 1 match to be sure
+};
+
 // ── DOM shortcuts ───────────────────────────────────────────
 const steps = {
     biometrics: document.getElementById('step-biometrics'),
@@ -189,7 +196,10 @@ function startRealScanLoop() {
         try {
             const res  = await fetch('/api/scan', {
                 method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': CSRF_TOKEN 
+                },
                 body:    JSON.stringify({ landmarks: vector })
             });
             const data = await res.json();
@@ -203,8 +213,39 @@ function startRealScanLoop() {
 
 // ── Handle scan result from backend ──────────────────────
 function handleScanResult(data) {
-    scanResult = data;
-    showScanOverlay(data);
+    // If we've already locked in a match, don't do anything
+    if (scanLocked && scanResult?.status === 'VALID') return;
+
+    if (data.status === 'VALID') {
+        if (recognitionConsensus.name === data.name) {
+            recognitionConsensus.count++;
+            console.log(`[Consensus] Match for ${data.name} confirmed ${recognitionConsensus.count}/${recognitionConsensus.required}`);
+        } else {
+            recognitionConsensus.name = data.name;
+            recognitionConsensus.count = 1;
+        }
+
+        if (recognitionConsensus.count >= recognitionConsensus.required) {
+            scanResult = data;
+            showScanOverlay(data);
+            // Reset for next session
+            recognitionConsensus.name = null;
+            recognitionConsensus.count = 0;
+            return;
+        } else {
+            // Not enough consensus yet, keep scanning
+            scanLocked = false;
+            updateScanStatus('detecting');
+            return;
+        }
+    } else {
+        // If it's a non-valid result, reset consensus
+        recognitionConsensus.name = null;
+        recognitionConsensus.count = 0;
+        
+        scanResult = data;
+        showScanOverlay(data);
+    }
 }
 
 // ── HUD status label (small text above scan area) ─────────
@@ -257,12 +298,13 @@ function showScanOverlay(data) {
         }, 3000);
 
     } else if (data.status === 'INVALID') {
+        const debugInfo = data.score ? `<br><small style="color:var(--text-muted); font-size:0.7rem;">Match: ${data.best_match} (${(data.score*100).toFixed(1)}%)</small>` : '';
         overlay.innerHTML = `
             <div class="scan-verdict invalid">
                 <div class="verdict-icon">❌</div>
                 <div class="verdict-title">INVALID</div>
                 <div class="verdict-name">Unknown Person</div>
-                <div class="verdict-sub">Face not in authorised database</div>
+                <div class="verdict-sub">Face not in authorised database ${debugInfo}</div>
             </div>`;
         setTimeout(() => {
             overlay.className = 'scan-overlay';
@@ -306,10 +348,18 @@ async function getCameras() {
             cameraSelect.appendChild(opt);
         });
 
-        // Default: use first real camera if available, else QR
+        // Default: try to find a "front" or "integrated" camera first
+        let defaultDevice = videoDevices[0];
+        const frontCamera = videoDevices.find(d => 
+            d.label.toLowerCase().includes('front') || 
+            d.label.toLowerCase().includes('integrated') ||
+            d.label.toLowerCase().includes('facetime')
+        );
+        if (frontCamera) defaultDevice = frontCamera;
+
         if (videoDevices.length > 0) {
-            cameraSelect.value = videoDevices[0].deviceId;
-            startCamera(videoDevices[0].deviceId);
+            cameraSelect.value = defaultDevice.deviceId;
+            startCamera(defaultDevice.deviceId);
         } else {
             startCamera('remote_qr');
         }
@@ -331,7 +381,7 @@ async function startCamera(deviceId) {
     if (deviceId === 'remote_qr') {
         video.style.display              = 'none';
         remoteStreamTarget.style.display = 'none';
-        const urlObj = `http://${SERVER_IP}:5000/mobile?session_id=${SESSION_ID}`;
+        const urlObj = `${BASE_URL}/mobile?session_id=${SESSION_ID}`;
         document.getElementById('qr-code-img').src =
             `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(urlObj)}&color=0f172a&bgcolor=10b981`;
         qrOverlay.style.display = 'flex';
@@ -343,9 +393,12 @@ async function startCamera(deviceId) {
     video.style.display                  = 'block';
 
     try {
-        currentStream = await navigator.mediaDevices.getUserMedia({
-            video: { deviceId: deviceId ? { exact: deviceId } : undefined }
-        });
+        const constraints = {
+            video: deviceId && deviceId !== 'remote_qr' 
+                ? { deviceId: { exact: deviceId } } 
+                : { facingMode: 'user' }
+        };
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
         await new Promise(res => { video.onloadedmetadata = res; });
         videoContainer.classList.remove('laser-scanning');
@@ -484,7 +537,10 @@ document.getElementById('btn-cast-vote').addEventListener('click', async () => {
     try {
         const res  = await fetch('/api/vote', {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF_TOKEN 
+            },
             body:    JSON.stringify({ candidate_id: selectedCandidateId })
         });
         const data = await res.json();
@@ -510,6 +566,14 @@ document.getElementById('btn-cast-vote').addEventListener('click', async () => {
 //  RESET FOR NEXT VOTER
 // ============================================================
 async function resetForNextVoter() {
+    // Notify server to release biometric lock
+    try {
+        await fetch('/api/exit', { 
+            method: 'POST',
+            headers: { 'X-CSRF-Token': CSRF_TOKEN }
+        });
+    } catch(e) { console.warn("Exit notice failed", e); }
+
     if (window.activeResetTimer) { clearInterval(window.activeResetTimer); window.activeResetTimer = null; }
 
     // State
@@ -545,7 +609,10 @@ async function resetForNextVoter() {
 document.getElementById('btn-reset-demo').addEventListener('click', async () => {
     if (!confirm('Reset ALL votes and biometric session locks?')) return;
     try {
-        const res  = await fetch('/api/reset', { method: 'POST' });
+        const res  = await fetch('/api/reset', { 
+            method: 'POST',
+            headers: { 'X-CSRF-Token': CSRF_TOKEN }
+        });
         const data = await res.json();
         alert(data.message);
         location.reload();
@@ -679,7 +746,10 @@ btnConfirmEnroll.addEventListener('click', async () => {
     try {
         const res  = await fetch('/api/enroll', {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF_TOKEN 
+            },
             body:    JSON.stringify({ name, face_data: faceData })
         });
         const data = await res.json();

@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="manifest" href="/static/manifest.json">
     <!-- MediaPipe FaceMesh -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
@@ -279,8 +280,9 @@
 
     <!-- Inject Server Params -->
     <script>
-        const SERVER_IP = "{{ local_ip }}";
+        const BASE_URL = "{{ base_url }}";
         const SESSION_ID = Math.random().toString(36).substring(2, 10);
+        const CSRF_TOKEN = "{{ csrf_token }}";
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="/static/app.js"></script>

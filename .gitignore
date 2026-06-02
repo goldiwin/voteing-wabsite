@@ -1,0 +1,19 @@
+dist/
+build/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.venv
+node_modules/
+.DS_Store
+*.zip
+secure voting - Copy/
+tempCodeRunnerFile.exe
+import_faces.py
+update_db.py

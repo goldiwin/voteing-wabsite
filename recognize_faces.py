@@ -7,24 +7,36 @@ import numpy as np
 known_encodings = []
 known_names = []
 
-path = "faces"
+# Paths to search for known face images
+paths = ["me"]
 
-# Ensure the faces directory exists
-if not os.path.exists(path):
-    os.makedirs(path)
-    print(f"Directory '{path}' created. Please add some face images there!")
+# Ensure at least the faces directory exists
+if not os.path.exists("me"):
+    os.makedirs("me")
 
-for file in os.listdir(path):
-    if file.endswith((".jpg", ".png", ".jpeg")):
-        img = face_recognition.load_image_file(f"{path}/{file}")
-        encodings = face_recognition.face_encodings(img)
-        if len(encodings) > 0:
-            encoding = encodings[0]
-            known_encodings.append(encoding)
-            known_names.append(os.path.splitext(file)[0])
-            print(f"Loaded face: {os.path.splitext(file)[0]}")
-        else:
-            print(f"No face found in {file}")
+for path in paths:
+    if os.path.exists(path):
+        print(f"Loading faces from directory: {path}")
+        for file in os.listdir(path):
+            if file.lower().endswith((".jpg", ".png", ".jpeg", ".webp")):
+                file_path = os.path.join(path, file)
+                try:
+                    img = face_recognition.load_image_file(file_path)
+                    encodings = face_recognition.face_encodings(img)
+                    if len(encodings) > 0:
+                        encoding = encodings[0]
+                        known_encodings.append(encoding)
+                        
+                        import re
+                        name = os.path.splitext(file)[0]
+                        name = re.sub(r'(_\d+|\(\d+\)|\s\d+)$', '', name).strip()
+                        
+                        known_names.append(name)
+                        print(f"  Loaded face: {name} (from {file})")
+                    else:
+                        print(f"  No face found in {file}")
+                except Exception as e:
+                    print(f"  Error loading {file}: {e}")
 
 print("System Ready! Waiting for camera...")
 
@@ -38,17 +50,19 @@ while True:
     if not ret:
         break
     
-    # Resize for faster processing
-    small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+    # Use a larger frame for higher accuracy (0.5 instead of 0.25)
+    small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
     rgb_frame = small_frame[:, :, ::-1]
 
-    # Detect faces
-    face_locations = face_recognition.face_locations(rgb_frame)
-    face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+    # Detect faces with upsampling for better accuracy
+    face_locations = face_recognition.face_locations(rgb_frame, number_of_times_to_upsample=1)
+    face_encodings = face_recognition.face_encodings(rgb_frame, face_locations, num_jitters=2)
 
     for face_encoding, face_location in zip(face_encodings, face_locations):
         matches = face_recognition.compare_faces(known_encodings, face_encoding)
         name = "Unknown"
+        status = "UNKNOWN FACE"
+        color = (0, 0, 255) # Red for unknown / not recognized
 
         if len(known_encodings) > 0:
             face_distances = face_recognition.face_distance(known_encodings, face_encoding)
@@ -80,8 +94,8 @@ while True:
                     print(f"SCAN SUCCESSFUL: Recognized {name} - Status: {status}")
                     last_recognized_name = name
 
-        # Scale back up face location
-        top, right, bottom, left = [v * 4 for v in face_location]
+        # Scale back up face location (since we resized to 0.5, we multiply by 2)
+        top, right, bottom, left = [v * 2 for v in face_location]
 
         # Draw rectangle and text
         cv2.rectangle(frame, (left, top), (right, bottom), color, 2)

@@ -1,7 +1,8 @@
-flask
-flask-socketio
+flask==3.0.3
+flask-socketio==5.3.6
 mediapipe==0.10.11
 opencv-python-headless
-numpy<2
-gunicorn
-eventlet
+numpy<2.0.0
+gunicorn==22.0.0
+eventlet==0.36.1
+python-dotenv

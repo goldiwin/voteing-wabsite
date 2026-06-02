@@ -1,8 +1,8 @@
 import sqlite3
 import os
 
-def init_db(  ):
-    conn = sqlite3.connect('voters.db')
+def init_db():
+    conn = sqlite3.connect('voters.db', timeout=20, check_same_thread=False)
     cursor = conn.cursor()
 
     # Create Voters Table
@@ -42,10 +42,10 @@ def init_db(  ):
 
     # Seed Mock Biometric Identities 
     voters = [
-        ('6105 2059 34 50', 'NAT-ID-001', 'VID-001', 'Suryansh Mishra', 'Shri Vinod Kumar Mishra', 'Male', 20, 'Uttar Pradesh, Pilibhit'),
-        ('1234 5678 90 12', 'NAT-ID-002', 'VID-002', 'Kanwal Preet Kaur', 'Suryansh Mishra', 'Female', 22, 'Punjab'),
-        ('4455 6677 88 99', 'NAT-ID-003', 'VID-003', 'Tanisk', 'Suryansh Mishra', 'Male', 21, 'Uttarakhand'),
-        ('9988 7766 55 44', 'NAT-ID-004', 'VID-004', 'Mansi', 'Suryansh Mishra', 'Female', 23, 'Gurgaon')
+        ('6105 2059 34 50', 'NAT-ID-001', 'VID-001', 'Suryansh Mishra', 'Vinod Kumar Mishra', 'Male', 19, 'Uttar Pradesh, Pilibhit'),
+        ('1234 5678 90 12', 'NAT-ID-002', 'VID-002', 'Kanwal Preet Kaur', 'Rajinder Gambhir', 'Female', 19, 'Punjab'),
+        ('9988 7766 55 44', 'NAT-ID-004', 'VID-004', 'Mansi', 'vishram singh', 'Female', 21, 'Gurgaon'),
+        ('5566 7788 99 00', 'NAT-ID-005', 'VID-005', 'Tanisk', 'Unknown', 'Male', 20, 'Delhi')
     ]
     cursor.executemany('''
         INSERT OR IGNORE INTO voters (aadhaar_number, id_card_number, voter_id_number, name, father_name, sex, age, address)
@@ -53,6 +53,7 @@ def init_db(  ):
     ''', voters)
 
     # Seed Candidates
+
     candidates = [
         ('Alice Smith',),
         ('Bob Jones',),
@@ -65,7 +66,7 @@ def init_db(  ):
     print("Database initialized successfully.")
 
 def get_db_connection():
-    conn = sqlite3.connect('voters.db')
+    conn = sqlite3.connect('voters.db', timeout=20, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
