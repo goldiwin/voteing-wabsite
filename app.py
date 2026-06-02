@@ -308,25 +308,16 @@ def _perform_scan(captured_sig):
 
         logger.info(f"Scan SUCCESS: Matched {best_name} (Score: {best_sim:.4f})")
 
-        # Check if they have already voted in the official database
         conn = get_db_connection()
-        voter = conn.execute('SELECT * FROM voters WHERE name = ?', (best_name,)).fetchone()
-        
-        if not voter:
-            logger.error(f"Matched {best_name} but not found in Database!")
-            return jsonify({'status': 'INVALID'}), 200
+        try:
+            voter = conn.execute('SELECT * FROM voters WHERE name = ?', (best_name,)).fetchone()
+            if not voter:
+                logger.error(f"Matched {best_name} but not found in Database!")
+                return jsonify({'status': 'INVALID'}), 200
 
-        if voter['has_voted'] == 1:
-            return jsonify({'status': 'ALREADY_SCANNED', 'name': best_name}), 200
-        
-        # Only lock out the name if the session is truly active
-        if 'voter_name' in session and session['voter_name'] == best_name:
-            # Already in middle of a session
-            pass 
-
-            if voter['has_voted']:
+            if voter['has_voted'] == 1:
                 return jsonify({'status': 'ALREADY_SCANNED', 'name': best_name}), 200
-
+            
             session['voter_id'], session['voter_name'] = voter['id'], best_name
             VALIDATED_VOTERS.add(best_name)
         finally:
