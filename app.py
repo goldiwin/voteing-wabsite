@@ -237,7 +237,9 @@ def exit_session():
 
 @app.route('/')
 def index():
-    # Only clear everything if it's a fresh start, usually done via Reset button
+    # Clear scan session flags on fresh load to prevent "Already Voted" ghosting
+    session.pop('voter_name', None)
+    session.pop('voter_id', None)
     session['csrf_token'] = secrets.token_hex(32)
     return render_template('index.html', base_url=get_base_url(), csrf_token=session.get('csrf_token'))
 
@@ -306,15 +308,21 @@ def _perform_scan(captured_sig):
 
         logger.info(f"Scan SUCCESS: Matched {best_name} (Score: {best_sim:.4f})")
 
-        if best_name in VALIDATED_VOTERS:
-            return jsonify({'status': 'ALREADY_SCANNED', 'name': best_name}), 200
-
+        # Check if they have already voted in the official database
         conn = get_db_connection()
-        try:
-            voter = conn.execute('SELECT * FROM voters WHERE name = ?', (best_name,)).fetchone()
-            if not voter:
-                logger.error(f"Matched {best_name} but not found in Database!")
-                return jsonify({'status': 'INVALID'}), 200
+        voter = conn.execute('SELECT * FROM voters WHERE name = ?', (best_name,)).fetchone()
+        
+        if not voter:
+            logger.error(f"Matched {best_name} but not found in Database!")
+            return jsonify({'status': 'INVALID'}), 200
+
+        if voter['has_voted'] == 1:
+            return jsonify({'status': 'ALREADY_SCANNED', 'name': best_name}), 200
+        
+        # Only lock out the name if the session is truly active
+        if 'voter_name' in session and session['voter_name'] == best_name:
+            # Already in middle of a session
+            pass 
 
             if voter['has_voted']:
                 return jsonify({'status': 'ALREADY_SCANNED', 'name': best_name}), 200
